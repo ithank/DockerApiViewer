@@ -8,23 +8,24 @@
 @section Scripts
     {
     <script>
-        var urlBase = "http://localhost:8000";
+        var urlBase = "http://localhost:60325/api/";
 
-        function ajaxCall(tgtDiv, loaderDiv, urlSegment) {
+        function ajaxCall(parentDiv, tgtDiv, loaderDiv, urlSegment, responseHandler) {
             console.log(tgtDiv, loaderDiv, urlSegment);
             $("#" + tgtDiv).text("");
             $("#" + loaderDiv).show();
             var surl = urlBase + urlSegment;
-            $.ajax({
-                type: "GET",
-                url: surl,
-                crossDomain: "true",
-                cache: false,
-                withCredentials: false,
+          $.ajax({
+            type: "GET",
+            url: surl,
+            crossDomain: "true",
+            cache: false,
+            withCredentials: false,
+            
                 success: function (responseData, textStatus, jqXHR) {
                     $("#" + loaderDiv).hide();
                     var contentType = jqXHR.getResponseHeader("content-type");
-                    if (contentType && contentType.indexOf("application/json") !== -1) {
+                    /*if (contentType && contentType.indexOf("application/json") !== -1) {
                         if (Array.isArray(responseData)) {
                             var output = '<ul>';
                             $.each(responseData,
@@ -35,14 +36,60 @@
                             $("#" + tgtDiv).html(output);
                         } else {
                             var output = '';
-                            output += "ID: " + responseData.id + "<br />";
-                            output += "First Name: " + responseData.firstname + "<br />";
-                            output += "Last Name: " + responseData.lastname + "<br />";
-                            $("#" + tgtDiv).html(output);
+                            //output += "ID: " + responseData.id + "<br />";
+                            //output += "First Name: " + responseData.firstname + "<br />";
+                            //output += "Last Name: " + responseData.lastname + "<br />";
+                            //$("#" + tgtDiv).html(output);
+                          $("#" + tgtDiv).html(responseData);
                         }
                     } else {
                         $("#" + tgtDiv).text(responseData);
+                    }*/
+                  if (contentType && contentType.indexOf("application/json") !== -1) {
+                    switch (responseHandler) {
+                      case 1:
+                        var output = "<span>Messages in RabbitMQ</span><br />";
+                        output += '<div class="text-center"><OutputNumber>' + responseData.messages + '</OutputNumber></div>';
+                        $("#" + parentDiv).removeClass()
+                        if (responseData.messages >= 200) {
+                          $("#" + parentDiv).addClass("alert alert-danger");
+                        } else if (responseData.messages >= 50) {
+                          $("#" + parentDiv).addClass("alert alert-warning");
+                        } else {
+                          $("#" + parentDiv).addClass("alert alert-success");
+                        }
+                        
+                        $("#" + tgtDiv).html(output);
+                        break;
+                    case 2:
+                        var output = "<span>Messages in Service Broker Target Queue</span><br />";
+                        output += '<div class="text-center"><OutputNumber>' + responseData.messageCount + '</OutputNumber></div>';
+                        //output += '<span> Is Queue enabled:' + responseData.isEnabled + ' </span>';
+                        var enabledClass = "alert alert-success";
+                      if (responseData.isEnabled !== true) {
+                        enabledClass = "alert alert-danger";
+                        }
+                      $("#" + parentDiv).removeClass().addClass(enabledClass);
+                      $("#" + tgtDiv).html(output);
+                        break;
+
+                    case 3:
+                        var qvars = urlSegment.split('=');
+                        var db = qvars[1];
+                        var output = "<span>Messages in Service Broker Initiator Queue</span><br />";
+                        output += '<div class="text-center"><OutputNumber>' + responseData.messageCount + '</OutputNumber></div>';
+                        output += "<span>Database: <b>" + db + "</b></span><br />";
+
+                      var enabledClass2 = "alert alert-success";
+                      if (responseData.isEnabled !== true) {
+                        enabledClass2 = "alert alert-danger";
+                        }
+                      $("#" + parentDiv).removeClass().addClass(enabledClass2);
+                      $("#" + tgtDiv).html(output);
+                      break;
                     }
+                  }
+
                 },
                 error: function (responseData, textStatus, errorThrown) {
                     $("#" + loaderDiv).hide();
@@ -64,13 +111,14 @@
         var methods = ['/people', '/people/1000', '/slowproc/100', '/throw', '/people/9', '/slowproc/200', '/people/30', '/people/100'];
 
         function load1() {
-            ajaxCall("target1", "LoadingImage1", methods[Math.floor(Math.random() * methods.length)]);
+          ajaxCall("panel1", "target1", "LoadingImage1", 'RabbitMq/GetMessageCount', 1);
+            //ajaxCall("target1", "LoadingImage1", methods[Math.floor(Math.random() * methods.length)]);
         }
         function load2() {
-            ajaxCall("target2", "LoadingImage2", methods[Math.floor(Math.random() * methods.length)]);
+          ajaxCall("panel2", "target2", "LoadingImage2", 'LiveUpdates/GetTargetQueueCountAndStatus', 2);
         }
         function load3() {
-            ajaxCall("target3", "LoadingImage3", methods[Math.floor(Math.random() * methods.length)]);
+          ajaxCall("panel3", "target3", "LoadingImage3", 'LiveUpdates/GetInitiatorQueueCountAndStatus?DatabaseName=DevTEST', 3);
         }
         function load4() {
             ajaxCall("target4", "LoadingImage4", methods[Math.floor(Math.random() * methods.length)]);
@@ -93,38 +141,38 @@
 
         window.onload = function () {
             setInterval(load1, 5000);
-            setInterval(load2, 6000);
-            setInterval(load3, 7000);
-            setInterval(load4, 5100);
-            setInterval(load5, 6100);
-            setInterval(load6, 7100);
-            setInterval(load7, 5200);
-            setInterval(load8, 6300);
-            setInterval(load9, 7400);
+            setInterval(load2, 10000);
+            setInterval(load3, 10000);
+            //setInterval(load4, 5100);
+            //setInterval(load5, 6100);
+            //setInterval(load6, 7100);
+            //setInterval(load7, 5200);
+            //setInterval(load8, 6300);
+            //setInterval(load9, 7400);
         }
 
     </script>
 }
 
 <div class="row">
-    <div class="col-md-4">
-        <div class="well">
+    <div class="col-md-3">
+        <div class="well" id="panel1">
             <div id="LoadingImage1" class="mx-auto text-center" style="display: none">
                 <img src="~/images/ajax-loader_sm.gif" />
             </div>
             <div id="target1" class="targetDiv"></div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="well">
+    <div class="col-md-3">
+        <div class="well" id="panel2">
             <div id="LoadingImage2" class="mx-auto text-center" style="display: none">
                 <img src="~/images/ajax-loader_sm.gif" />
             </div>
             <div id="target2" class="targetDiv"></div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="well">
+    <div class="col-md-3">
+        <div class="well" id="panel3">
             <div id="LoadingImage3" class="mx-auto text-center" style="display: none">
                 <img src="~/images/ajax-loader_sm.gif" />
             </div>
@@ -132,6 +180,7 @@
         </div>
     </div>
 </div>
+@*
 <div class="row">
     <div class="col-md-4">
         <div class="well">
@@ -184,3 +233,4 @@
         </div>
     </div>
 </div>
+*@
