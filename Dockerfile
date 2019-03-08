@@ -4,20 +4,21 @@
 
  WORKDIR /src
  COPY . .
+ ##RUN git clone https://github.com/ithank/DockerApiViewer.git src
 
  WORKDIR /src/DockerApiViewer
  #RUN dotnet publish -o /app/ -c Release
 
- 
-RUN dotnet publish -o /app/ -c Release
-RUN mkdir -p /app/data
-RUN dotnet ef database update
-
-
  # Stage 2
  FROM microsoft/aspnetcore
+ 
+ MAINTAINER pv
  WORKDIR /app
+ 
+ ENV ASPNETCORE_ENVIRONMENT Development
+
  COPY --from=builder /app .
+ 
  EXPOSE 80 
  ENTRYPOINT ["dotnet", "DockerApiViewer.dll"]
 
